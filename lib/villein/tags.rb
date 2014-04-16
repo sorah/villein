@@ -29,6 +29,10 @@ module Villein
       nil
     end
 
+    def inspect
+      "#<Villein::Tags #{@tags.inspect}>"
+    end
+
     def to_h
       # duping
       Hash[@tags.map{ |k,v| [k,v] }]
