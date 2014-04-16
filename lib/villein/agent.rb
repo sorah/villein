@@ -55,16 +55,7 @@ module Villein
 
       @pid_lock.synchronize do
         start_listening_events
-
-        @exitstatus = nil
-        actual = -> { @pid = spawn(*command, out: @log, err: @log) }
-
-        if defined? Bundler
-          Bundler.with_clean_env(&actual)
-        else
-          actual.call
-        end
-
+        start_process
         start_watchdog
       end
     end
@@ -78,14 +69,7 @@ module Villein
         stop_watchdog
         call_hooks 'stop', nil
 
-        begin
-          begin
-            timeout(timeout_sec) { Process.waitpid(@pid) }
-          rescue Timeout::Error
-            Process.kill(:KILL, @pid)
-          end
-        rescue Errno::ECHILD
-        end
+        kill_process(timeout_sec)
 
         stop_listening_events
 
@@ -137,6 +121,29 @@ module Villein
     end
 
     private
+
+    def start_process
+      @exitstatus = nil
+
+      actual = -> { @pid = spawn(*command, out: @log, err: @log) }
+
+      if defined? Bundler
+        Bundler.with_clean_env(&actual)
+      else
+        actual.call
+      end
+    end
+
+    def kill_process(timeout_sec = 10)
+      begin
+        begin
+          timeout(timeout_sec) { Process.waitpid(@pid) }
+        rescue Timeout::Error
+          Process.kill(:KILL, @pid)
+        end
+      rescue Errno::ECHILD
+      end
+    end
 
     def start_watchdog
       return if @watchdog && @watchdog.alive?
