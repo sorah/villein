@@ -183,17 +183,20 @@ module Villein
     def event_listener_loop
       while sock = @event_listener_server.accept
         Thread.new do
-          buf = ""
-          loop do
-            socks, _, _ = IO.select([sock], nil, nil, 5)
-            break unless socks
+          begin
+            buf = ""
+            loop do
+              socks, _, _ = IO.select([sock], nil, nil, 5)
+              break unless socks
 
-            socks[0].read_nonblock(1024, buf)
-            break if socks[0].eof?
+              socks[0].read_nonblock(1024, buf)
+              break if socks[0].eof?
+            end
+
+            handle_event buf
+          ensure
+            sock.close unless sock.closed?
           end
-
-          handle_event buf
-          sock.close unless sock.closed?
         end
       end
     end
