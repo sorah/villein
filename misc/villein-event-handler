@@ -1,0 +1,2 @@
+#!/bin/bash
+exec ruby -rsocket -rjson -e'TCPSocket.new(ARGV[0], ARGV[1].to_i).puts({env: Hash[ENV.select{|k,v|/SERF/ =~ k}], input: $stdin.read}.to_json)' -- $*

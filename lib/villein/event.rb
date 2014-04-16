@@ -2,15 +2,15 @@ module Villein
   class Event
     MEMBERS_EVENT = %w(member-join member-leave member-failed member-update member-reap)
 
-    def initialize(values={})
-      @type = values[:type]
-      @self_name = values[:self_name]
-      @self_tags = values[:self_tags]
-      @user_event = values[:user_event]
-      @query_name = values[:query_name]
-      @user_ltime = values[:user_ltime]
-      @query_ltime = values[:query_ltime]
-      @payload = values[:payload]
+    def initialize(env={}, payload: nil)
+      @type = env['SERF_EVENT']
+      @self_name = env['SERF_SELF_NAME']
+      @self_tags = Hash[env.select{ |k, v| /^SERF_TAG_/ =~ k }.map { |k, v| [k.sub(/^SERF_TAG_/, ''), v] }]
+      @user_event = env['SERF_USER_EVENT']
+      @query_name = env['SERF_QUERY_NAME']
+      @user_ltime = env['SERF_USER_LTIME']
+      @query_ltime = env['SERF_QUERY_LTIME']
+      @payload = payload
     end
 
     attr_reader :type, :self_name, :self_tags, :user_event, :query_name, :user_ltime, :query_ltime, :payload
