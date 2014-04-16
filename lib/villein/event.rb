@@ -27,7 +27,7 @@ module Villein
       @members ||= begin
         payload.each_line.map do |line|
           name, address, _, tags_str = line.chomp.split(/\t/)
-          {name: name, address: address, tags: parse_tags(tags_str)}
+          {name: name, address: address, tags: parse_tags(tags_str || '')}
         end
       end
     end
