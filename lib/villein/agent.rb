@@ -5,6 +5,9 @@ require 'villein/client'
 require 'villein/event'
 
 module Villein
+  ##
+  # Villein::Agent allows you to start new serf agent.
+  # Use this when you need to start and manage the serf agents from ruby process.
   class Agent < Client
     class AlreadyStarted < Exception; end
     class NotRunning < Exception; end
@@ -38,18 +41,26 @@ module Villein
 
     attr_reader :pid, :exitstatus
 
+    ##
+    # Returns true when the serf agent has started
     def started?
       !!@pid
     end
 
+    ##
+    # Returns true when the serf agent has started, but stopped for some reason.
+    # Use Agent#exitstatus to get <code>Process::Status</code> object.
     def dead?
       !!@exitstatus
     end
 
+    ##
+    # Returns true when the serf agent is running (it has started and not dead yet).
     def running?
       started? && !dead?
     end
 
+    # Start the serf agent.
     def start!
       raise AlreadyStarted if running?
 
@@ -60,6 +71,9 @@ module Villein
       end
     end
 
+    ##
+    # Stop the serf agent.
+    # After +timeout_sec+ seconds elapsed, it will attempt to KILL if the agent is still running.
     def stop!(timeout_sec = 10)
       raise NotRunning unless running?
 
@@ -77,6 +91,9 @@ module Villein
       end
     end
 
+    ##
+    # Add +at_exit+ hook to safely stop at exit of current ruby process.
+    # Note that +Kernel#.at_exit+ hook won't run when Ruby has crashed.
     def auto_stop
       at_exit { self.stop! }
     end
@@ -89,6 +106,8 @@ module Villein
       end
     end
 
+    ##
+    # Command line arguments to start serf-agent.
     def command
       cmd = [@serf, 'agent']
 

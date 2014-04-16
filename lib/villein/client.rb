@@ -2,6 +2,9 @@ require 'json'
 require 'villein/tags'
 
 module Villein
+  ##
+  # Villein::Client allows you to order existing serf agent.
+  # You will need RPC address and agent name to command.
   class Client
     def initialize(rpc_addr, name: nil, serf: 'serf', silence: true)
       @rpc_addr = rpc_addr
@@ -59,19 +62,31 @@ module Villein
       response["members"]
     end
 
+    ##
+    # Returns Villein::Tags object for the current agent.
+    # Villein::Tags provides high-level API for tagging agents.
     def tags
       @tags ||= Tags.new(self)
     end
 
+    ##
+    # Get tag from the agent.
+    # Using Villein::Client#tags method is recommended. It provides high-level API via +Villein::Tags+.
     def get_tags
       me = members(name: self.name)[0]
       me["tags"]
     end
 
+    ##
+    # Remove tag from the agent.
+    # Using Villein::Client#tags method is recommended. It provides high-level API via +Villein::Tags+.
     def delete_tag(key)
       call_serf 'tags', '-delete', key
     end
 
+    ##
+    # Set tag to the agent.
+    # Using Villein::Client#tags method is recommended. It provides high-level API via +Villein::Tags+.
     def set_tag(key, val)
       call_serf 'tags', '-set', "#{key}=#{val}"
     end

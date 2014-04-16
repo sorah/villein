@@ -19,6 +19,9 @@ module Villein
       user_ltime || query_ltime
     end
 
+    ##
+    # Parse and returns member list in Array<Hash> when available.
+    # Always return +nil+ if the event type is not +member-*+.
     def members
       return nil unless MEMBERS_EVENT.include?(type)
       @members ||= begin
