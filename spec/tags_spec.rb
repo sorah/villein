@@ -40,6 +40,24 @@ describe Villein::Tags do
     end
   end
 
+  describe "#update(hash)" do
+    it "sets multiple tags at once" do
+      expect(parent).to receive(:set_tag).with('a', '1').and_return('1')
+      expect(parent).to receive(:set_tag).with('b', '2').and_return('2')
+
+      tags.update(a: 1, b: 2)
+    end
+
+    context "with nil" do
+      it "removes tags at once" do
+        expect(parent).to receive(:delete_tag).with('a')
+        expect(parent).to receive(:delete_tag).with('b')
+
+        tags.update(a: nil, b: nil)
+      end
+    end
+  end
+
   describe "#delete" do
     it "deletes key, using parent#delete_tag" do
       expect(parent).to receive(:delete_tag).with('a')

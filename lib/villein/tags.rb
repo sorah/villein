@@ -20,6 +20,17 @@ module Villein
     end
 
     ##
+    # Update multiple tags at once.
+    # When a value is nil, this will remove tag with key of a value.
+    def update(tags={})
+      tags.each do |key, val|
+        self[key] = val
+      end
+
+      self
+    end
+
+    ##
     # Returns tag of the agent.
     # Note that this method is cached, you have to call +reload+ method to flush them.
     def [](key)
