@@ -6,6 +6,19 @@ module Villein
   # Villein::Client allows you to order existing serf agent.
   # You will need RPC address and agent name to command.
   class Client
+
+    ##
+    # for serf command failures
+    class SerfError < Exception; end
+
+    ##
+    # Error for the given argument exceeds the limit of serf when setting tags and sending events.
+    class LengthExceedsLimitError < SerfError; end
+
+    ##
+    # Error for connection failures
+    class SerfConnectionError < SerfError; end
+
     def initialize(rpc_addr, name: nil, serf: 'serf', silence: true)
       @rpc_addr = rpc_addr
       @name = name
@@ -56,7 +69,7 @@ module Villein
         options.push('-tag', "#{tag}=#{val}")
       end
 
-      json = IO.popen(['serf', 'members', "-rpc-addr=#{rpc_addr}", *options], 'r', &:read)
+      json = call_serf('members', *options)
       response = JSON.parse(json)
 
       response["members"]
@@ -94,14 +107,23 @@ module Villein
     private 
 
     def call_serf(cmd, *args)
-      options = {}
-
-      if silence?
-        options[:out] = File::NULL
-        options[:err] = File::NULL
+      status, out = IO.popen([@serf, cmd, "-rpc-addr=#{rpc_addr}", *args, err: [:child, :out]], 'r') do |io|
+        _, s = Process.waitpid2(io.pid)
+        [s, io.read]
       end
 
-      system @serf, cmd, "-rpc-addr=#{rpc_addr}", *args, options
+      unless status.success?
+        case out
+        when /^Error connecting to Serf agent:/
+          raise SerfConnectionError, out.chomp
+        when /exceeds limit of \d+ bytes$/
+          raise LengthExceedsLimitError, out.chomp
+        else
+          raise SerfError, out.chomp
+        end
+      end
+
+      out
     end
   end
 end
