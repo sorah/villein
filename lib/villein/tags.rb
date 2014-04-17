@@ -7,6 +7,7 @@ module Villein
 
     ##
     # Set tag of the agent.
+    # When a value is nil, this will remove tag of key.
     def []=(key, value)
       if value
         key = key.to_s
