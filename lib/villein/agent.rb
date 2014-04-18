@@ -62,9 +62,9 @@ module Villein
 
     # Start the serf agent.
     def start!
-      raise AlreadyStarted if running?
-
       @pid_lock.synchronize do
+        raise AlreadyStarted if running?
+
         start_listening_events
         start_process
         start_watchdog
@@ -75,9 +75,9 @@ module Villein
     # Stop the serf agent.
     # After +timeout_sec+ seconds elapsed, it will attempt to KILL if the agent is still running.
     def stop!(timeout_sec = 10)
-      raise NotRunning unless running?
-
       @pid_lock.synchronize do
+        raise NotRunning unless running?
+
         Process.kill(:INT, @pid)
 
         stop_watchdog
