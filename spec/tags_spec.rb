@@ -42,10 +42,10 @@ describe Villein::Tags do
 
   describe "#update(hash)" do
     it "sets multiple tags at once" do
-      expect(parent).to receive(:set_tag).with('a', '1').and_return('1')
-      expect(parent).to receive(:set_tag).with('b', '2').and_return('2')
+      expect(parent).to receive(:set_tag).with('a', '0').and_return('1')
+      expect(parent).to receive(:set_tag).with('b', '1').and_return('2')
 
-      tags.update(a: 1, b: 2)
+      tags.update(a: 0, b: 1)
     end
 
     context "with nil" do

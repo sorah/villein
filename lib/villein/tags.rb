@@ -12,6 +12,10 @@ module Villein
       if value
         key = key.to_s
         value = value.to_s
+
+        # Don't do anything if same with existing value
+        return value if self[key] == value
+
         @client.set_tag(key, value)
         @tags[key] = value
       else
