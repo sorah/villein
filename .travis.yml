@@ -17,7 +17,7 @@ notifications:
     - travis-ci@sorah.jp
 before_script:
   - mkdir -p vendor/serf
-  - curl -o vendor/serf/serf.zip https://dl.bintray.com/mitchellh/serf/0.5.0_linux_amd64.zip
+  - curl -L -o vendor/serf/serf.zip https://dl.bintray.com/mitchellh/serf/0.5.0_linux_amd64.zip
   - unzip -d vendor/serf vendor/serf/serf.zip
   - export PATH=$PWD/vendor/serf:$PATH
 script: bundle exec rspec -fd ./spec
