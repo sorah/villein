@@ -99,12 +99,14 @@ module Villein
     end
 
     %w(member_join member_leave member_failed member_update member_reap
-       user_event query stop event).each do |event|
+       user query stop event).each do |event|
 
       define_method(:"on_#{event}") do |&block|
         add_hook(event, block)
       end
     end
+
+    alias_method :on_user_event, :on_user
 
     ##
     # Command line arguments to start serf-agent.
