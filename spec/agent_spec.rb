@@ -41,9 +41,12 @@ describe Villein::Agent do
 
     agent.start!
 
+    Thread.new { agent.wait_for_ready }.join(5)
+
     expect(agent.dead?).to be_false
     expect(agent.running?).to be_true
     expect(agent.started?).to be_true
+    expect(agent.ready?).to be_true
     expect(agent.pid).to be_a(Fixnum)
 
     agent.stop!
@@ -51,6 +54,7 @@ describe Villein::Agent do
     expect(agent.dead?).to be_false
     expect(agent.running?).to be_false
     expect(agent.started?).to be_false
+    expect(agent.ready?).to be_false
     expect(agent.pid).to be_nil
 
     expect(received).to eq [true, nil]

@@ -55,6 +55,13 @@ module Villein
     end
 
     ##
+    # Return true when the agent has received events at least once.
+    # Useful to wait serf for ready to use.
+    def ready?
+      running? && @event_received
+    end
+
+    ##
     # Returns true when the serf agent is running (it has started and not dead yet).
     def running?
       started? && !dead?
@@ -64,6 +71,8 @@ module Villein
     def start!
       @pid_lock.synchronize do
         raise AlreadyStarted if running?
+
+        @event_received = false
 
         start_listening_events
         start_process
@@ -89,6 +98,12 @@ module Villein
 
         @pid = nil
       end
+    end
+
+    ##
+    # Blocks until #ready? become true.
+    def wait_for_ready
+      sleep 0.1 until ready?
     end
 
     ##
@@ -232,6 +247,8 @@ module Villein
     def handle_event(json)
       event_payload = JSON.parse(json)
       event = Event.new(event_payload['env'], payload: event_payload['input'])
+
+      @event_received = true
 
       call_hooks event.type.gsub(/-/, '_'), event
       call_hooks 'event', event
