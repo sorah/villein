@@ -110,7 +110,7 @@ module Villein
     # Add +at_exit+ hook to safely stop at exit of current ruby process.
     # Note that +Kernel#.at_exit+ hook won't run when Ruby has crashed.
     def auto_stop
-      at_exit { self.stop! }
+      at_exit { self.stop! if self.running? }
     end
 
     %w(member_join member_leave member_failed member_update member_reap
