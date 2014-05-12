@@ -19,6 +19,8 @@ Or install it yourself as:
 ## Requirements
 
 - Ruby 2.0.0+
+- Serf
+  - v0.6.0 or later is required to use `query` and `info` method
 
 ## Usage
 
