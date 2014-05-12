@@ -273,6 +273,9 @@ module Villein
       end
     rescue JSON::ParserError
       # do nothing
+    rescue Exception => e
+      $stderr.puts "Exception during handling event: #{event.inspect}"
+      $stderr.puts e.backtrace.map { |_| _.prepend("\t") }
     end
 
     def hooks_for(name)
