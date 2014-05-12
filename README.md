@@ -71,6 +71,12 @@ client.event('my-event', 'payload')
 client.event('my-event', 'payload', coalesce: true)
 ```
 
+### Querying
+
+``` ruby
+client.query('hey', '') #=> {"Acks"=>["XXX.local"], "Responses"=>{"XXX"=>"..."}}
+```
+
 ### Retrieve member list
 
 ``` ruby
@@ -126,6 +132,24 @@ agent.on_event { |status|
   # `status` will be a Process::Status, on unexpectedly exits.
   p status
 }
+```
+
+### (Agent only) Respond to query events
+
+``` ruby
+agent = Villein::Agent.new
+agent.start!
+
+agent.respond("hey") { "hello" }
+```
+
+```
+$ serf query hey
+Query 'hey' dispatched
+Ack from 'XXX.local'
+Response from 'XXX.local': hello
+Total Acks: 1
+Total Responses: 1
 ```
 
 ## Advanced
