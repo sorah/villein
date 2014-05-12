@@ -6,7 +6,6 @@ module Villein
   # Villein::Client allows you to order existing serf agent.
   # You will need RPC address and agent name to command.
   class Client
-
     ##
     # for serf command failures
     class SerfError < Exception; end
@@ -39,6 +38,36 @@ module Villein
       end
 
       call_serf 'event', *options, name, payload
+    end
+
+    def query(name, payload, node: nil, tag: nil, timeout: nil, no_ack: false)
+      # TODO: version check
+      options = ['-format', 'json']
+
+      if node
+        node = [node] unless node.respond_to?(:each)
+        node.each do |n|
+          options << "-node=#{n}"
+        end
+      end
+
+      if tag
+        tag = [tag] unless tag.respond_to?(:each)
+        tag.each do |t|
+          options << "-tag=#{t}"
+        end
+      end
+
+      if timeout
+        options << "-timeout=#{timeout}"
+      end
+
+      if no_ack
+        options << "-no-ack"
+      end
+
+      out = call_serf('query', *options, name, payload)
+      JSON.parse(out)
     end
 
     def join(addr, replay: false)
