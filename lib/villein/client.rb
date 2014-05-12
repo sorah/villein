@@ -18,6 +18,14 @@ module Villein
     # Error for connection failures
     class SerfConnectionError < SerfError; end
 
+    ##
+    # Error when an called serf command is not found.
+    class SerfCommandNotFound < SerfError; end
+
+    ##
+    # Error when an operation is not supported by the current version.
+    class InsufficientVersionError < SerfError; end
+
     def initialize(rpc_addr, name: nil, serf: 'serf', silence: true)
       @rpc_addr = rpc_addr
       @name = name
@@ -29,6 +37,15 @@ module Villein
     attr_writer :silence
 
     attr_reader :name, :rpc_addr, :serf
+
+    ##
+    # Returns a result of `serf info`.
+    # This may raise InsufficientVersionError when `serf info` is not supported.
+    def info
+      JSON.parse call_serf('info', '-format', 'json')
+    rescue SerfCommandNotFound
+      raise InsufficientVersionError, 'serf v0.6.0 or later is required to run `serf info`.'
+    end
 
     def event(name, payload, coalesce: true)
       options = []
@@ -147,6 +164,8 @@ module Villein
           raise SerfConnectionError, out.chomp
         when /exceeds limit of \d+ bytes$/
           raise LengthExceedsLimitError, out.chomp
+        when /^Available commands are:/
+          raise SerfCommandNotFound
         else
           raise SerfError, out.chomp
         end

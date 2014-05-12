@@ -50,6 +50,56 @@ describe Villein::Client do
     end
   end
 
+  describe "#info" do
+    let(:json) { (<<-EOJ).gsub(/\n|\s+/,'') }
+    {
+      "agent": {
+        "name": "foo"
+      },
+      "runtime": {
+        "arch": "amd64",
+        "cpu_count": "8",
+        "goroutines": "22",
+        "max_procs": "1",
+        "os": "darwin",
+        "version": "go1.2"
+      },
+      "serf": {
+        "event_queue": "0",
+        "event_time": "1",
+        "failed": "0",
+        "intent_queue": "0",
+        "left": "0",
+        "member_time": "2",
+        "members": "2",
+        "query_queue": "0",
+        "query_time": "3"
+      },
+      "tags": {
+        "thisis": "tag"
+      }
+    }
+    EOJ
+
+    subject(:info) { client.info }
+
+    it "returns `serf info`" do
+      expect_serf('info', '-format', 'json', message: json)
+
+      expect(info).to eq(JSON.parse(json))
+    end
+
+    context "when not available" do
+      it "raises error" do
+        expect_serf('info', '-format', 'json', message: 'Available commands are:', success: false)
+
+        expect { info }.to raise_error(Villein::Client::InsufficientVersionError)
+      end
+    end
+
+    include_examples "failure cases"
+  end
+
   describe "#event" do
     subject { client.event('test', 'payload') }
 
