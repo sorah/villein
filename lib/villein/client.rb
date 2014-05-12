@@ -31,6 +31,8 @@ module Villein
       @name = name
       @serf = serf
       @silence = true
+
+      retrieve_name unless @name
     end
 
     def silence?() !!@silence; end
@@ -151,6 +153,10 @@ module Villein
     end
 
     private 
+
+    def retrieve_name
+      @name = self.info["agent"]["name"]
+    end
 
     def call_serf(cmd, *args)
       status, out = IO.popen([@serf, cmd, "-rpc-addr=#{rpc_addr}", *args, err: [:child, :out]], 'r') do |io|

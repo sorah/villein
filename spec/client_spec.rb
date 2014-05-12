@@ -50,6 +50,21 @@ describe Villein::Client do
     end
   end
 
+  describe "#initialize" do
+    context "without name" do
+      subject(:client) { described_class.new('x.x.x.x:nnnn') }
+
+      it "retrieves name using #info" do
+        # we can't use allow(client) here because it calls #initialize!
+        allow_any_instance_of(described_class).to receive(:info).and_return(
+          "agent" => {"name" => "the-name"},
+        )
+
+        expect(client.name).to eq('the-name')
+      end
+    end
+  end
+
   describe "#info" do
     let(:json) { (<<-EOJ).gsub(/\n|\s+/,'') }
     {
