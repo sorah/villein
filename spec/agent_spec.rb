@@ -76,6 +76,21 @@ describe Villein::Agent do
     expect(received2.type).to eq 'member-join'
   end
 
+  it "can respond to queries" do
+    agent.respond("hey") do |e|
+      expect(e).to be_a(Villein::Event)
+      "hello"
+    end
+
+    agent.start!
+    Thread.new { agent.wait_for_ready }.join(5)
+    response = agent.query("hey", '')
+    agent.stop!
+
+    expect(response["Responses"].values.first).to eq("hello")
+
+  end
+
   it "can handle unexpected stop" do
     received = nil
     agent.on_stop { |status| received = status }

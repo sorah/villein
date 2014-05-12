@@ -84,7 +84,76 @@ describe Villein::Client do
           'Error sending event: user event exceeds limit of 256 bytes')
       end
     end
+  end
 
+  describe "#query" do
+    let(:json) { (<<-EOJ).gsub(/\n|\s+/,'') }
+      {"Acks":["foo","bar"], "Responses":{"foo":"response"}}
+    EOJ
+
+    subject(:query) { client.query('test', 'payload') }
+
+    it "sends query event" do
+      expect_serf('query', '-format', 'json', 'test', 'payload', message: json)
+
+      expect(query).to eq(JSON.parse(json))
+    end
+
+    context "with node filter" do
+      context "in String" do
+        subject(:query) { client.query('test', 'payload', node: 'foo') }
+
+        it "queries with -node" do
+          expect_serf('query', '-format', 'json', '-node=foo', 'test', 'payload', message: json)
+          query
+        end
+      end
+
+      context "in Array" do
+        subject(:query) { client.query('test', 'payload', node: %w(foo bar)) }
+
+        it "queries with -node" do
+          expect_serf('query', '-format', 'json', '-node=foo', '-node=bar', 'test', 'payload', message: json)
+          query
+        end
+      end
+    end
+
+    context "with tag filter" do
+      context "in String" do
+        subject(:query) { client.query('test', 'payload', tag: 'foo') }
+
+        it "queries with -tag" do
+          expect_serf('query', '-format', 'json', '-tag=foo', 'test', 'payload', message: json)
+          query
+        end
+      end
+
+      context "in Array" do
+        subject(:query) { client.query('test', 'payload', tag: %w(foo bar)) }
+
+        it "queries with -tag" do
+          expect_serf('query', '-format', 'json', '-tag=foo', '-tag=bar', 'test', 'payload', message: json)
+          query
+        end
+      end
+    end
+
+    include_examples "failure cases"
+
+    context "when length exceeds limit" do
+      it "raises error" do
+        expect_serf('query', '-format', 'json', 'test', 'payload',
+          success: false,
+          message: 'Error sending event: query exceeds limit of 1024 bytes')
+
+        expect {
+          subject
+        }.to raise_error(
+          Villein::Client::LengthExceedsLimitError,
+          'Error sending event: query exceeds limit of 1024 bytes')
+      end
+    end
   end
 
   describe "#join" do
