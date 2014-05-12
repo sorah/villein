@@ -11,6 +11,7 @@ module Villein
   class Agent < Client
     class AlreadyStarted < Exception; end
     class NotRunning < Exception; end
+    class ResponderExists < Exception; end
 
     EVENT_HANDLER_SH = File.expand_path(File.join(__dir__, '..', '..', 'misc', 'villein-event-handler'))
 
@@ -33,7 +34,9 @@ module Villein
       @custom_event_handlers, @replay = event_handlers, replay
       @initial_tags, @tags_file = tags, tags_file
       @log_level, @log = log_level, log
+
       @hooks = {}
+      @responders = {}
 
       @pid, @exitstatus = nil, nil
       @pid_lock = Mutex.new
@@ -156,6 +159,18 @@ module Villein
       cmd.flatten.map(&:to_s)
     end
 
+    ##
+    # Respond to query events.
+    # Raises error when override is false and responder for given query name already exists.
+    def respond(name, override: false, &block)
+      name = name.to_s
+      if !override && @responders[name]
+        raise ResponderExists, "Responder for #{name} already exists. To force, pass `override: true`"
+      end
+
+      @responders[name] = block
+    end
+
     private
 
     def start_process
@@ -236,7 +251,7 @@ module Villein
               break if socks[0].eof?
             end
 
-            handle_event buf
+            handle_event buf, sock
           ensure
             sock.close unless sock.closed?
           end
@@ -244,7 +259,7 @@ module Villein
       end
     end
 
-    def handle_event(json)
+    def handle_event(json, sock)
       event_payload = JSON.parse(json)
       event = Event.new(event_payload['env'], payload: event_payload['input'])
 
@@ -252,6 +267,10 @@ module Villein
 
       call_hooks event.type.gsub(/-/, '_'), event
       call_hooks 'event', event
+
+      if event.type == 'query' && @responders[event.query_name]
+        sock.write(@responders[event.query_name].call(event))
+      end
     rescue JSON::ParserError
       # do nothing
     end
