@@ -275,6 +275,7 @@ module Villein
       # do nothing
     rescue Exception => e
       $stderr.puts "Exception during handling event: #{event.inspect}"
+      $stderr.puts "#{e.class}: #{e.message}"
       $stderr.puts e.backtrace.map { |_| _.prepend("\t") }
     end
 
