@@ -160,8 +160,9 @@ module Villein
 
     def call_serf(cmd, *args)
       status, out = IO.popen([@serf, cmd, "-rpc-addr=#{rpc_addr}", *args, err: [:child, :out]], 'r') do |io|
+        o = io.read
         _, s = Process.waitpid2(io.pid)
-        [s, io.read]
+        [s, o]
       end
 
       unless status.success?
