@@ -260,8 +260,8 @@ module Villein
     end
 
     def handle_event(json, sock)
-      event_payload = JSON.parse(json)
-      event = Event.new(event_payload['env'], payload: event_payload['input'])
+      env,input = Marshal.load(json)
+      event = Event.new(env, payload: input)
 
       @event_received = true
 

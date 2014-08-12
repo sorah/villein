@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require 'json'
+#require 'json'
 require 'socket'
 
 sock = TCPSocket.new(ARGV[0], ARGV[1].to_i)
@@ -7,7 +7,7 @@ sock = TCPSocket.new(ARGV[0], ARGV[1].to_i)
 serf_env = Hash[ENV.select{|k,v|/SERF/ =~ k}]
 input = $stdin.read
 
-sock.puts({env: serf_env, input: input}.to_json)
+sock.puts(Marshal.dump([serf_env, input]))
 sock.close_write
 
 if ENV["SERF_EVENT"] == "query"
