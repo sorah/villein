@@ -260,8 +260,13 @@ module Villein
       end
     end
 
-    def handle_event(json, sock)
-      env,input = Marshal.load(json)
+    def handle_event(payload, sock)
+      env_payload, input = payload.split(/\0\0/,2) # ['name=val', 'name=val', '', 'input']
+
+      env = Hash[env_payload.split(/\0/).map do |line|
+        line.split(/=/,2)
+      end]
+
       event = Event.new(env, payload: input)
 
       @event_received = true
