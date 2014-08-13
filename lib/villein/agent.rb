@@ -13,8 +13,14 @@ module Villein
     class NotRunning < Exception; end
     class ResponderExists < Exception; end
 
-    EVENT_HANDLER_SH = File.expand_path(File.join(__dir__, '..', '..', 'misc', 'villein-event-handler'))
+    EVENT_HANDLER_NATIVE = File.expand_path(File.join(__dir__, '..', '..', 'misc', 'villein-event-handler'))
+    EVENT_HANDLER_RB = File.expand_path(File.join(__dir__, '..', '..', 'misc', 'villein-event-handler.rb'))
 
+    EVENT_HANDLER = if File.exist?(EVENT_HANDLER_NATIVE)
+                      EVENT_HANDLER_NATIVE
+                    else
+                      EVENT_HANDLER_RB
+                    end
     def initialize(serf: 'serf',
                    node: Socket.gethostname,
                    rpc_addr: '127.0.0.1:7373', bind: nil, iface: nil, advertise: nil,
@@ -23,7 +29,8 @@ module Villein
                    encrypt: nil, profile: nil, protocol: nil,
                    event_handlers: [], replay: nil,
                    tags: {}, tags_file: nil,
-                   log_level: :info, log: File::NULL)
+                   log_level: :info, log: File::NULL,
+                   villein_handler: EVENT_HANDLER)
       @serf = serf
       @name = node
       @rpc_addr = rpc_addr
@@ -34,6 +41,7 @@ module Villein
       @custom_event_handlers, @replay = event_handlers, replay
       @initial_tags, @tags_file = tags, tags_file
       @log_level, @log = log_level, log
+      @villein_handler = villein_handler
 
       @hooks = {}
       @responders = {}
@@ -141,7 +149,7 @@ module Villein
 
       cmd << [
         '-event-handler',
-        [EVENT_HANDLER_SH, *event_listener_addr].join(' ')
+        [@villein_handler, *event_listener_addr].join(' ')
       ]
 
       @custom_event_handlers.each do |handler|
