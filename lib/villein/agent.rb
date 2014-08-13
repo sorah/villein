@@ -239,8 +239,8 @@ module Villein
     end
 
     def event_listener_loop
-      while sock = @event_listener_server.accept
-        Thread.new do
+      loop do
+        Thread.new(@event_listener_server.accept) do |sock|
           begin
             buf, obuf = "", ""
             loop do
