@@ -242,12 +242,13 @@ module Villein
       while sock = @event_listener_server.accept
         Thread.new do
           begin
-            buf = ""
+            buf, obuf = "", ""
             loop do
               socks, _, _ = IO.select([sock], nil, nil, 5)
               break unless socks
 
-              socks[0].read_nonblock(1024, buf)
+              socks[0].read_nonblock(2048, obuf)
+              buf << obuf
               break if socks[0].eof?
             end
 
