@@ -16,6 +16,7 @@ notifications:
   email:
     - travis-ci@sorah.jp
 before_script:
+  - ruby extconf.rb
   - mkdir -p vendor/serf
   - curl -L -o vendor/serf/serf.zip https://dl.bintray.com/mitchellh/serf/0.6.0_linux_amd64.zip
   - unzip -d vendor/serf vendor/serf/serf.zip
