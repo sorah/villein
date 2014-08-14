@@ -157,7 +157,7 @@ copy_stream(Mission *mission, int from_fd, int to_fd)
 int
 main(int argc, const char *argv[])
 {
-  if (argc < 2) {
+  if (argc < 3) {
     fprintf(stderr, "usage: $0 host port\n");
     return 2;
   }
