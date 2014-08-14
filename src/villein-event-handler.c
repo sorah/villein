@@ -36,8 +36,7 @@ main(int argc, const char *argv[])
   hints.ai_family = PF_UNSPEC;
 
   if ((err = getaddrinfo(hostname, port, &hints, &host0)) != 0) {
-    fprintf(stderr, "%s %s -- ", hostname, port);
-    fprintf(stderr, "oops: getaddrinfo error: %s\n", gai_strerror(err));
+    fprintf(stderr, "oops: getaddrinfo(%s, %s) error: %s\n", hostname, port, gai_strerror(err));
     return 1;
   }
 
