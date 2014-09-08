@@ -29,6 +29,8 @@ module Villein
                    encrypt: nil, profile: nil, protocol: nil,
                    event_handlers: [], replay: nil,
                    tags: {}, tags_file: nil,
+                   async_query: true,
+                   parallel_events: false,
                    log_level: :info, log: File::NULL,
                    villein_handler: EVENT_HANDLER)
       @serf = serf
@@ -40,6 +42,7 @@ module Villein
       @encrypt, @profile, @protocol = encrypt, profile, protocol
       @custom_event_handlers, @replay = event_handlers, replay
       @initial_tags, @tags_file = tags, tags_file
+      @async_query, @parallel_events = async_query, parallel_events
       @log_level, @log = log_level, log
       @villein_handler = villein_handler
 
@@ -228,13 +231,23 @@ module Villein
       return if @event_listener_thread
 
       @event_listener_server = TCPServer.new('localhost', 0)
+      @event_queue = Queue.new
       @event_listener_thread = Thread.new do
         event_listener_loop
       end
+
+      @event_dispatcher_thread = Thread.new do
+        event_dispatcher_loop
+      end
+
     end
 
     def stop_listening_events
       if @event_listener_thread && @event_listener_thread.alive?
+        @event_listener_thread.kill
+      end
+
+      if @event_listener_dispatcher && @event_listener_dispatcher.alive?
         @event_listener_thread.kill
       end
 
@@ -243,54 +256,96 @@ module Villein
       end
 
       @event_listener_thread = nil
+      @event_listener_dispatcher = nil
+      @event_queue = nil
       @event_listener_server = nil
     end
 
     def event_listener_loop
-      loop do
-        Thread.new(@event_listener_server.accept) do |sock|
-          begin
-            buf, obuf = "", ""
-            loop do
-              socks, _, _ = IO.select([sock], nil, nil, 5)
-              break unless socks
+      while sock = @event_listener_server.accept
+        sock_delegated = false
+        begin
+          buf, obuf = "", ""
+          loop do
+            socks, _, _ = IO.select([sock], nil, nil, 5)
+            break unless socks
 
-              socks[0].read_nonblock(2048, obuf)
-              buf << obuf
-              break if socks[0].eof?
-            end
-
-            handle_event buf, sock
-          ensure
-            sock.close unless sock.closed?
+            socks[0].read_nonblock(2048, obuf)
+            buf << obuf
+            break if socks[0].eof?
           end
+
+          event = parse_event(buf)
+          next unless event
+
+          # XXX:
+          if event.type == 'query'
+            if @async_query
+              sock_delegated = true
+              Thread.new(event, sock) do |ev, so|
+                handle_query ev, so
+              end
+            else
+              handle_query event, sock
+            end
+          else
+            if @parallel_events
+              Thread.new(event) do |ev|
+                handle_event event
+              end
+            else
+              @event_queue << event
+            end
+          end
+        ensure
+          sock.close if !sock_delegated && !sock.closed?
         end
       end
     end
 
-    def handle_event(payload, sock)
+    def event_dispatcher_loop
+      while event = @event_queue.pop
+        handle_event event
+      end
+    end
+
+    def parse_event(payload)
       env_payload, input = payload.split(/\0\0/,2) # ['name=val', 'name=val', '', 'input']
 
       env = Hash[env_payload.split(/\0/).map do |line|
         line.split(/=/,2)
       end]
 
-      event = Event.new(env, payload: input)
+      Event.new(env, payload: input)
+    rescue JSON::ParserError
+      # do nothing
+      return nil
+    end
 
+    def handle_event(event)
       @event_received = true
+      call_hooks event.type.gsub(/-/, '_'), event
+      call_hooks 'event', event
+    rescue Exception => e
+      $stderr.puts "Exception during handling event: #{event.inspect}"
+      $stderr.puts "#{e.class}: #{e.message}"
+      $stderr.puts e.backtrace.map { |_| _.prepend("\t") }
+    end
 
+    def handle_query(event, sock)
+      @event_received = true
       call_hooks event.type.gsub(/-/, '_'), event
       call_hooks 'event', event
 
       if event.type == 'query' && @responders[event.query_name]
         sock.write(@responders[event.query_name].call(event))
       end
-    rescue JSON::ParserError
-      # do nothing
     rescue Exception => e
-      $stderr.puts "Exception during handling event: #{event.inspect}"
+      $stderr.puts "Exception during handling query: #{event.inspect}"
       $stderr.puts "#{e.class}: #{e.message}"
       $stderr.puts e.backtrace.map { |_| _.prepend("\t") }
+    ensure
+      sock.close unless sock.closed?
     end
 
     def hooks_for(name)

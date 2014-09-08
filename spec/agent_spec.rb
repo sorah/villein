@@ -76,6 +76,26 @@ describe Villein::Agent do
     expect(received2.type).to eq 'member-join'
   end
 
+  context "with parallel_events=true" do
+    subject(:agent) { described_class.new(rpc_addr: rpc_addr, bind: bind, parallel_events: false) }
+
+    it "can receive events" do
+      received1, received2 = nil, nil
+
+      agent.on_event { |e| received1 = e }
+      agent.on_member_join { |e| received2 = e }
+
+      agent.start!
+      20.times { break if received1; sleep 0.1 }
+      agent.stop!
+
+      expect(received1).to be_a(Villein::Event)
+      expect(received2).to be_a(Villein::Event)
+      expect(received1.type).to eq 'member-join'
+      expect(received2.type).to eq 'member-join'
+    end
+  end
+
   it "can respond to queries" do
     agent.respond("hey") do |e|
       expect(e).to be_a(Villein::Event)
@@ -88,7 +108,24 @@ describe Villein::Agent do
     agent.stop!
 
     expect(response["Responses"].values.first).to eq("hello")
+  end
 
+  context "with async_query=false" do
+    subject(:agent) { described_class.new(rpc_addr: rpc_addr, bind: bind, async_query: false) }
+
+    it "can respond to queries" do
+      agent.respond("hey") do |e|
+        expect(e).to be_a(Villein::Event)
+        "hello"
+      end
+
+      agent.start!
+      Thread.new { agent.wait_for_ready }.join(5)
+      response = agent.query("hey", '')
+      agent.stop!
+
+      expect(response["Responses"].values.first).to eq("hello")
+    end
   end
 
   it "can handle unexpected stop" do
