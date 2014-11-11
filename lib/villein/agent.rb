@@ -32,6 +32,7 @@ module Villein
                    async_query: true,
                    parallel_events: false,
                    log_level: :info, log: File::NULL,
+                   raise_error_on_event_listener_fail: false,
                    villein_handler: EVENT_HANDLER)
       @serf = serf
       @name = node
@@ -44,6 +45,7 @@ module Villein
       @initial_tags, @tags_file = tags, tags_file
       @async_query, @parallel_events = async_query, parallel_events
       @log_level, @log = log_level, log
+      @raise_error_on_event_listener_fail = raise_error_on_event_listener_fail
       @villein_handler = villein_handler
 
       @hooks = {}
@@ -240,6 +242,8 @@ module Villein
         event_dispatcher_loop
       end
 
+      @event_listener_thread.abort_on_exception = @raise_error_on_event_listener_fail
+      @event_dispatcher_thread.abort_on_exception = @raise_error_on_event_listener_fail
     end
 
     def stop_listening_events
