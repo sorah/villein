@@ -319,6 +319,7 @@ module Villein
 
     def parse_event(payload)
       env_payload, input = payload.split(/\0\0/,2) # ['name=val', 'name=val', '', 'input']
+      return unless env_payload && input
 
       env = Hash[env_payload.split(/\0/).map do |line|
         line.split(/=/,2)
