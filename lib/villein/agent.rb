@@ -274,11 +274,15 @@ module Villein
             socks, _, _ = IO.select([sock], nil, nil, 5)
             break unless socks
 
-            socks[0].read_nonblock(2048, obuf)
+            begin
+              socks[0].read_nonblock(2048, obuf)
+            rescue EOFError
+              break
+            end
+
             buf << obuf
             break if socks[0].eof?
           end
-
           event = parse_event(buf)
           next unless event
 
